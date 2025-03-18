@@ -1,0 +1,6 @@
+@MiniDropBox_HostAddress = http://localhost:5202
+
+GET {{MiniDropBox_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

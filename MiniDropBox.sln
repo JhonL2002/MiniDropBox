@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35828.75 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniDropBox.API", "MiniDropBox\MiniDropBox.API.csproj", "{F2408875-5592-4BD9-884F-88DE3DCD61E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniDropBox.Application", "MiniDropBox.Application\MiniDropBox.Application.csproj", "{6F60EB82-3D2C-40F5-B91E-5383CD8F1524}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniDropBox.Core", "MiniDropBox.Core\MiniDropBox.Core.csproj", "{051CAE34-0E52-4924-986C-B70533249F13}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniDropBox.Infraestructure", "MiniDropBox.Infraestructure\MiniDropBox.Infraestructure.csproj", "{81C0AF67-861F-4129-9DF9-20EC4612274E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F2408875-5592-4BD9-884F-88DE3DCD61E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2408875-5592-4BD9-884F-88DE3DCD61E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2408875-5592-4BD9-884F-88DE3DCD61E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2408875-5592-4BD9-884F-88DE3DCD61E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F60EB82-3D2C-40F5-B91E-5383CD8F1524}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F60EB82-3D2C-40F5-B91E-5383CD8F1524}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F60EB82-3D2C-40F5-B91E-5383CD8F1524}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F60EB82-3D2C-40F5-B91E-5383CD8F1524}.Release|Any CPU.Build.0 = Release|Any CPU
+		{051CAE34-0E52-4924-986C-B70533249F13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{051CAE34-0E52-4924-986C-B70533249F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{051CAE34-0E52-4924-986C-B70533249F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{051CAE34-0E52-4924-986C-B70533249F13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81C0AF67-861F-4129-9DF9-20EC4612274E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81C0AF67-861F-4129-9DF9-20EC4612274E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81C0AF67-861F-4129-9DF9-20EC4612274E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81C0AF67-861F-4129-9DF9-20EC4612274E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C898D398-0518-41E3-8375-F0B2C46FE144}
+	EndGlobalSection
+EndGlobal
