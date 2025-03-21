@@ -7,7 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiniDropBox.Core\MiniDropBox.Core.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiniDropBox.Infraestructure\MiniDropBox.Infraestructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiniDropBox.Application\MiniDropBox.Application.csproj" />
+    <ProjectReference Include="..\MiniDropBox.Config\MiniDropBox.Config.csproj" />
   </ItemGroup>
 
 </Project>
