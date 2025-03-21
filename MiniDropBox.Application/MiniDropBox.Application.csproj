@@ -14,4 +14,9 @@
     <ProjectReference Include="..\MiniDropBox.Core\MiniDropBox.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Implementations\Factories\" />
+    <Folder Include="Interfaces\Factories\" />
+  </ItemGroup>
+
 </Project>

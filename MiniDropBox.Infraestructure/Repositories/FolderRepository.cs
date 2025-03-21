@@ -1,5 +1,6 @@
 ﻿using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
+using File = MiniDropBox.Core.Models.File;
 
 namespace MiniDropBox.Infraestructure.Repositories
 {
@@ -32,7 +33,15 @@ namespace MiniDropBox.Infraestructure.Repositories
 
         public Task<Folder?> GetByIdAsync(int folderId)
         {
-            var folder = _folders.FirstOrDefault(f => f.Id == folderId);
+            var folder = _folders
+                .Where(f => f.Id == folderId)
+                .Select(f => new Folder
+                {
+                    Id = f.Id,
+                    ParentFolderId = f.ParentFolderId,
+                    ParentFolder = _folders.FirstOrDefault(p => p.Id == f.ParentFolderId),
+                })
+                .FirstOrDefault();
             return Task.FromResult(folder);
         }
 

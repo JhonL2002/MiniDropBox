@@ -16,14 +16,18 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(FolderDTO), 201)]
+        [ProducesResponseType(typeof(string), 400)]
         public async Task<IActionResult> CreateFolder([FromBody] FolderDTO folderDTO)
         {
             if (folderDTO == null || string.IsNullOrWhiteSpace(folderDTO.Name))
             {
                 return BadRequest("Folder name cannot be empty");
             }
+
             var folder = await _folderService.CreateFolderAsync(folderDTO);
-            return CreatedAtAction(nameof(GetFolderById), new { folderId = folder.Id }, folder);
+
+            return CreatedAtAction(nameof(CreateFolder), new { id = folder.Id}, folder);
         }
 
         [HttpGet("{folderId}")]

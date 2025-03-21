@@ -14,9 +14,9 @@ namespace MiniDropBox.Application.Implementations
             _folderRepository = folderRepository;
         }
 
-        public async Task<Folder> CreateFolderAsync(FolderDTO folderDTO)
+        public async Task<FolderDTO> CreateFolderAsync(FolderDTO folderDTO)
         {
-            var parentFolder = await _folderRepository.GetByIdAsync(folderDTO.ParentFolderId);
+            var parentFolder = await _folderRepository.GetByIdAsync(folderDTO.ParentFolderId!.Value);
             bool isSubFolder = parentFolder != null;
 
             var folder = new Folder
@@ -25,11 +25,32 @@ namespace MiniDropBox.Application.Implementations
                 Name = folderDTO.Name,
                 ParentFolderId = isSubFolder ? folderDTO.ParentFolderId : null,
                 UserId = folderDTO.UserId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
-            await _folderRepository.AddAsync(folder);
-            return folder;
+            if (isSubFolder)
+            {
+                folder.ParentFolder = new Folder
+                {
+                    Id = parentFolder!.Id,
+                    Name = parentFolder.Name,
+                    ParentFolderId = parentFolder.ParentFolderId,
+                    UserId = parentFolder.UserId,
+                    CreatedAt = parentFolder.CreatedAt,
+                };
+
+                parentFolder!.SubFolders.Add(folder);
+                await _folderRepository.UpdateAsync(parentFolder!);
+            }
+
+            var createdFolder = await _folderRepository.AddAsync(folder);
+            
+            return new FolderDTO(
+                createdFolder.Id,
+                createdFolder.Name,
+                createdFolder.ParentFolderId,
+                createdFolder.UserId
+            );
         }
 
         public async Task<bool> DeleteFolderAsync(int folderId)
