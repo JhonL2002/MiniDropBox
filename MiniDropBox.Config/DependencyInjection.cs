@@ -10,6 +10,8 @@ namespace MiniDropBox.Config
         {
             //Change this when you implement a real data persistence
             services.AddSingleton<IFolderRepository, FolderRepository>();
+            services.AddSingleton<IUserRepository, UserRepository>();
+
             return services;
         }
     }
