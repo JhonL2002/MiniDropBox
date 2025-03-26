@@ -8,10 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MiniDropBox.Application\MiniDropBox.Application.csproj" />
     <ProjectReference Include="..\MiniDropBox.Core\MiniDropBox.Core.csproj" />
   </ItemGroup>
 

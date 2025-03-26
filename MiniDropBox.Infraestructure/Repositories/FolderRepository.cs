@@ -45,6 +45,12 @@ namespace MiniDropBox.Infraestructure.Repositories
             return Task.FromResult(folder);
         }
 
+        public Task<Folder?> GetByNameAsync(string name)
+        {
+            var folder = _folders.FirstOrDefault(f => f.Name == name);
+            return Task.FromResult(folder);
+        }
+
         public Task<Folder?> UpdateAsync(Folder folder)
         {
             var existingFolder = _folders.FirstOrDefault(f => f.Id == folder.Id);

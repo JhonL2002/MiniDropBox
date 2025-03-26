@@ -69,6 +69,11 @@ namespace MiniDropBox.Application.Implementations
             return await _folderRepository.GetByIdAsync(folderId);
         }
 
+        public async Task<Folder?> GetFolderByNameAsync(string folderName)
+        {
+            return await _folderRepository.GetByNameAsync(folderName);
+        }
+
         public async Task<bool> UpdateFolderAsync(Folder folder)
         {
             var updatedFolder = await _folderRepository.UpdateAsync(folder);

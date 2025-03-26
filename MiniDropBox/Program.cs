@@ -3,11 +3,14 @@ using MiniDropBox.Application.Injections;
 using Microsoft.IdentityModel.Tokens;
 using MiniDropBox.Config;
 using System.Text;
+using Microsoft.OpenApi.Models;
+using MiniDropBox.API.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
 builder.Configuration.AddUserSecrets("d8cb55f4-7146-435d-940d-c68dce9df836");
 var secret = builder.Configuration["JwtSettings:JwtKey"];
 
@@ -25,6 +28,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddAuthorization();
+
 //Add infraestructure services
 builder.Services.AddApplicationDependencies();
 
@@ -33,7 +38,34 @@ builder.Services.AddApplicationServices();
 
 //Add swagger services
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Put the JWT token here",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        },
+        new string[]{ }
+        }
+    });
+
+    c.OperationFilter<SwaggerFileUploadOperationFilter>();
+});
 
 var app = builder.Build();
 
@@ -45,6 +77,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

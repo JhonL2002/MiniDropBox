@@ -9,6 +9,6 @@ namespace MiniDropBox.Application.Interfaces
 {
     public interface IUserService
     {
-        Task<UserDTO> CreateUserAsync(UserDTO userDTO);
+        Task<Result<UserDTO>> CreateUserAsync(UserDTO userDTO);
     }
 }

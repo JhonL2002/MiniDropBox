@@ -1,7 +1,9 @@
-﻿namespace MiniDropBox.Application.Interfaces
+﻿using MiniDropBox.Application.DTOs;
+
+namespace MiniDropBox.Application.Interfaces
 {
     public interface IAuthenticationService
     {
-        Task<string> Authenticate(string username, string password);
+        Task<Result<string>> Authenticate(string username, string password);
     }
 }

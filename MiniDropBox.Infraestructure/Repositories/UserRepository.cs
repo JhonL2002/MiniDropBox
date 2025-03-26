@@ -1,29 +1,24 @@
 ﻿using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniDropBox.Infraestructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly List<User> _users = new();
+        public List<User> Users { get; set; } = new();
 
         public Task<User> AddAsync(User user)
         {
-            _users.Add(user);
+            Users.Add(user);
             return Task.FromResult(user);
         }
 
         public Task<User?> DeleteAsync(int userId)
         {
-            var user = _users.FirstOrDefault(f => f.Id == userId);
+            var user = Users.FirstOrDefault(u => u.Id == userId);
             if (user != null)
             {
-                _users.Remove(user);
+                Users.Remove(user);
                 return Task.FromResult<User?>(user);
             }
 
@@ -32,25 +27,30 @@ namespace MiniDropBox.Infraestructure.Repositories
 
         public Task<IEnumerable<User>> GetAllAsync()
         {
-            return Task.FromResult(_users.AsEnumerable());
+            return Task.Run(() => Users.AsEnumerable());
         }
 
         public Task<User?> GetByIdAsync(int userId)
         {
-            var user = _users.FirstOrDefault(f => f.Id == userId);
+            return Task.Run(() => Users.FirstOrDefault(u => u.Id == userId));
+        }
+
+        public Task<User?> GetByUsernameAsync(string username)
+        {
+            var user = Users.FirstOrDefault(u => u.Username == username);
             return Task.FromResult(user);
         }
 
         public Task<User?> UpdateAsync(User user)
         {
-            var existingUser = _users.FirstOrDefault(f => f.Id == user.Id);
+            var existingUser = Users.FirstOrDefault(u => u.Id == user.Id);
             if (existingUser != null)
             {
                 existingUser.Username = user.Username;
                 return Task.FromResult<User?>(existingUser);
             }
 
-            return Task.FromResult<User?>(existingUser);
+            return Task.FromResult<User?>(null);
         }
     }
 }

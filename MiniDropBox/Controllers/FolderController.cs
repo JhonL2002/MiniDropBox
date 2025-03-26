@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MiniDropBox.Application.DTOs;
 using MiniDropBox.Application.Interfaces;
 
@@ -42,8 +43,22 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<FolderDTO>), 200)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(401)]
+        [Authorize(Roles = "Default Role")]
         public async Task<IActionResult> GetAllFolders()
         {
+            if(!User.IsInRole("Default Role"))
+            {
+                return Forbid();
+            }
+
+            if (!User.Identity!.IsAuthenticated)
+            {
+                return Unauthorized();
+            }
+
             var result = await _folderService.GetAllFoldersAsync();
             if (result == null)
             {

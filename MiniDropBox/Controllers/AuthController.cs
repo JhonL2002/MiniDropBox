@@ -16,14 +16,16 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(400)]
         public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
         {
-            var token = await _authService.Authenticate(loginDTO.Username, loginDTO.Password);
-            if (token == null)
+            var result = await _authService.Authenticate(loginDTO.Username, loginDTO.Password);
+            if (!result.IsSuccess)
             {
-                return Unauthorized();
+                return BadRequest(new ErrorResponse(400, result.Error!));
             }
-            return Ok(new {token});
+            return Ok(new { Token = result.Value} );
         }
     }
 }

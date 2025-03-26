@@ -25,9 +25,14 @@ namespace MiniDropBox.API.Controllers
                 return BadRequest("User name, email and password cannot be empty");
             }
 
-            var createdUser = await _userService.CreateUserAsync(userDTO);
+            var result = await _userService.CreateUserAsync(userDTO);
 
-            return CreatedAtAction(nameof(CreateUser), new { id = createdUser.Id }, createdUser);
+            if (result.IsSuccess)
+            {
+                return Ok(result.Value);
+            }
+
+            return BadRequest(new ErrorResponse(400, result.Error!));
         }
     }
 }
