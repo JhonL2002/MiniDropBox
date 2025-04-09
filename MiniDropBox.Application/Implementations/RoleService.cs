@@ -1,5 +1,6 @@
 ﻿using MiniDropBox.Application.DTOs;
 using MiniDropBox.Application.Interfaces;
+using MiniDropBox.Application.Interfaces.UnitOfWork;
 using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
 using System;
@@ -13,28 +14,42 @@ namespace MiniDropBox.Application.Implementations
     public class RoleService : IRoleService
     {
         private readonly IRoleRepository _roleRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public RoleService(IRoleRepository roleRepository)
+        public RoleService(IRoleRepository roleRepository, IUnitOfWork unitOfWork)
         {
             _roleRepository = roleRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<RoleDTO> CreateRoleAsync(RoleDTO roleDTO)
         {
-            var role = new Role
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
             {
-                Id = roleDTO.Id,
-                Name = roleDTO.Name,
-                Description = roleDTO.Description
-            };
+                var role = new Role
+                {
+                    Id = roleDTO.Id,
+                    Name = roleDTO.Name,
+                    Description = roleDTO.Description
+                };
 
-            var createdRole = await _roleRepository.AddAsync(role);
+                var createdRole = await _roleRepository.AddAsync(role);
 
-            return new RoleDTO(
-                createdRole.Id,
-                createdRole.Name,
-                createdRole.Description
-            );
+                await _unitOfWork.CommitAsync();
+
+                return new RoleDTO(
+                    createdRole.Id,
+                    createdRole.Name,
+                    createdRole.Description
+                );
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw;
+            }
         }
     }
 }

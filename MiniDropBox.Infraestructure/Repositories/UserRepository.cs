@@ -1,56 +1,68 @@
-﻿using MiniDropBox.Core.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
+using MiniDropBox.Infraestructure.Data;
 
 namespace MiniDropBox.Infraestructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        public List<User> Users { get; set; } = new();
+        private readonly AppDbContext _context;
+
+        public UserRepository(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public Task<User> AddAsync(User user)
         {
-            Users.Add(user);
+            _context.Users.Add(user);
             return Task.FromResult(user);
         }
 
-        public Task<User?> DeleteAsync(int userId)
+        public async Task<User?> DeleteAsync(int userId)
         {
-            var user = Users.FirstOrDefault(u => u.Id == userId);
+            var user = await _context.Users.FindAsync(userId);
             if (user != null)
             {
-                Users.Remove(user);
-                return Task.FromResult<User?>(user);
+                _context.Users.Remove(user);
             }
-
-            return Task.FromResult<User?>(null);
+            return user;
         }
 
-        public Task<IEnumerable<User>> GetAllAsync()
+        public async Task<IEnumerable<User>> GetAllAsync()
         {
-            return Task.Run(() => Users.AsEnumerable());
+            return await _context.Users.ToListAsync();
         }
 
-        public Task<User?> GetByIdAsync(int userId)
+        public async Task<User?> GetByEmailOrUsernameAsync(string email, string username)
         {
-            return Task.Run(() => Users.FirstOrDefault(u => u.Id == userId));
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email || u.Username == username);
         }
 
-        public Task<User?> GetByUsernameAsync(string username)
+        public async Task<User?> GetByIdAsync(int userId)
         {
-            var user = Users.FirstOrDefault(u => u.Username == username);
-            return Task.FromResult(user);
+            return await _context.Users.FindAsync(userId);
         }
 
-        public Task<User?> UpdateAsync(User user)
+        public async Task<User?> GetByUsernameAsync(string username)
         {
-            var existingUser = Users.FirstOrDefault(u => u.Id == user.Id);
+            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        }
+
+        public async Task<User?> UpdateAsync(User updatedUser)
+        {
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == updatedUser.Id);
             if (existingUser != null)
             {
-                existingUser.Username = user.Username;
-                return Task.FromResult<User?>(existingUser);
+                existingUser.Username = updatedUser.Username;
+                existingUser.Email = updatedUser.Email;
+                existingUser.Password = updatedUser.Password;
+                _context.Users.Update(existingUser);
+                return existingUser;
             }
-
-            return Task.FromResult<User?>(null);
+            return null;
         }
     }
 }

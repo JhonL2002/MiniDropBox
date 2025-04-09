@@ -1,59 +1,61 @@
-﻿using MiniDropBox.Core.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
-using File = MiniDropBox.Core.Models.File;
+using MiniDropBox.Infraestructure.Data;
 
 namespace MiniDropBox.Infraestructure.Repositories
 {
     public class FolderRepository : IFolderRepository
     {
-        private readonly List<Folder> _folders = new(); 
+        private readonly AppDbContext _context;
+
+        public FolderRepository(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public Task<Folder> AddAsync(Folder folder)
         {
-            _folders.Add(folder);
+            _context.Folders.Add(folder);
             return Task.FromResult(folder);
         }
 
-        public Task<Folder?> DeleteAsync(int folderId)
+        public async Task<Folder?> DeleteAsync(int folderId)
         {
-            var folder = _folders.FirstOrDefault(f => f.Id == folderId);
+            var folder = await _context.Folders.FindAsync(folderId);
             if (folder != null)
             {
-                _folders.Remove(folder);
-                return Task.FromResult<Folder?>(folder);
+                _context.Folders.Remove(folder);
             }
 
-            return Task.FromResult<Folder?>(null);
+            return folder;
         }
 
-        public Task<IEnumerable<Folder>> GetAllAsync()
+        public async Task<Folder?> GetByIdAsync(int folderId)
         {
-            return Task.FromResult(_folders.AsEnumerable());
+            var folder = await _context.Folders
+                .Include(f => f.ParentFolder)
+                .FirstOrDefaultAsync(f => f.Id == folderId);
+            return folder;
         }
 
-        public Task<Folder?> GetByIdAsync(int folderId)
-        {
-            var folder = _folders
-                .Where(f => f.Id == folderId)
-                .Select(f => new Folder
-                {
-                    Id = f.Id,
-                    ParentFolderId = f.ParentFolderId,
-                    ParentFolder = _folders.FirstOrDefault(p => p.Id == f.ParentFolderId),
-                })
-                .FirstOrDefault();
-            return Task.FromResult(folder);
-        }
 
         public Task<Folder?> GetByNameAsync(string name)
         {
-            var folder = _folders.FirstOrDefault(f => f.Name == name);
+            var folder = _context.Folders.FirstOrDefault(f => f.Name == name);
             return Task.FromResult(folder);
+        }
+
+        public async Task<List<Folder>> GetFoldersByUserIdAsync(int userId)
+        {
+            return await _context.Folders
+                .Where(f => f.UserId == userId)
+                .ToListAsync();
         }
 
         public Task<Folder?> UpdateAsync(Folder folder)
         {
-            var existingFolder = _folders.FirstOrDefault(f => f.Id == folder.Id);
+            var existingFolder = _context.Folders.FirstOrDefault(f => f.Id == folder.Id);
             if (existingFolder != null)
             {
                 existingFolder.Name = folder.Name;

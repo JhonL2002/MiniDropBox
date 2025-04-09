@@ -7,6 +7,7 @@
         public int? ParentFolderId { get; set; }
         public int UserId { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string Path { get; set; }
 
         //Relationship with file
         public ICollection<File> Files { get; set; } = new List<File>();

@@ -1,5 +1,7 @@
-﻿using MiniDropBox.Core.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
+using MiniDropBox.Infraestructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,47 +12,55 @@ namespace MiniDropBox.Infraestructure.Repositories
 {
     public class RoleRepository : IRoleRepository
     {
-        private readonly List<Role> _roles = new();
+        private readonly AppDbContext _context;
+
+        public RoleRepository(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public Task<Role> AddAsync(Role role)
         {
-            _roles.Add(role);
+            _context.Roles.Add(role);
             return Task.FromResult(role);
         }
 
-        public Task<Role?> DeleteAsync(int roleId)
+        public async Task<Role?> DeleteAsync(int roleId)
         {
-            var role = _roles.FirstOrDefault(f => f.Id == roleId);
+            var role = await _context.Roles.FindAsync(roleId);
             if (role != null)
             {
-                _roles.Remove(role);
-                return Task.FromResult<Role?>(role);
+                _context.Roles.Remove(role);
             }
-
-            return Task.FromResult<Role?>(null);
+            return role;
         }
 
-        public Task<IEnumerable<Role>> GetAllAsync()
+        public async Task<IEnumerable<Role>> GetAllAsync()
         {
-            return Task.FromResult(_roles.AsEnumerable());
+            return await _context.Roles.ToListAsync();
         }
 
-        public Task<Role?> GetByIdAsync(int roleId)
+        public async Task<Role?> GetByIdAsync(int roleId)
         {
-            var role = _roles.FirstOrDefault(f => f.Id == roleId);
-            return Task.FromResult(role);
+            var role = await _context.Roles.FindAsync(roleId);
+            return role;
         }
 
-        public Task<Role?> UpdateAsync(Role role)
+        public Task<Role?> GetByNameAsync(string roleName)
         {
-            var existingRole = _roles.FirstOrDefault(f => f.Id == role.Id);
+            var role = _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+            return role;
+        }
+
+        public async Task<Role?> UpdateAsync(Role role)
+        {
+            var existingRole = await _context.Roles.FindAsync(role.Id);
             if (existingRole != null)
             {
                 existingRole.Name = role.Name;
-                return Task.FromResult<Role?>(existingRole);
+                existingRole.Description = role.Description;
             }
-
-            return Task.FromResult<Role?>(null);
+            return null;
         }
     }
 }

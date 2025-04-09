@@ -17,7 +17,7 @@ namespace MiniDropBox.API.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateUserRoleAsync([FromBody] UserRoleDTO userRoleDTO)
+        public async Task<IActionResult> CreateUserRole([FromBody] UserRoleDTO userRoleDTO)
         {
             if (userRoleDTO.UserId < 1 || userRoleDTO.RoleId < 1)
             {
@@ -25,7 +25,7 @@ namespace MiniDropBox.API.Controllers
             }
 
             var userRole = await _userRoleService.CreateUserRoleAsync(userRoleDTO);
-            return CreatedAtAction(nameof(CreateUserRoleAsync), new { id = userRole.Id }, userRole);
+            return Ok(userRole);
         }
 
         [HttpGet]
@@ -37,6 +37,22 @@ namespace MiniDropBox.API.Controllers
                 return NoContent();
             }
             return Ok(result);
+        }
+
+        [HttpPut("{userId}")]
+        public async Task<IActionResult> UpdateUserRole(int userId, [FromBody] UserRoleDTO userRoleDTO)
+        {
+            if (userId != userRoleDTO.UserId)
+            {
+                return BadRequest("User ID in route and body must match");
+            }
+            
+            var result = await _userRoleService.UpdateAsync(userRoleDTO);
+            if (result.IsSuccess)
+            {
+                return Ok(result.Value);
+            }
+            return NotFound(result.Error);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using MiniDropBox.Application.DTOs;
+using MiniDropBox.Application.DTOs.Nodes;
 using MiniDropBox.Core.Models;
 
 namespace MiniDropBox.Application.Interfaces
@@ -8,7 +9,7 @@ namespace MiniDropBox.Application.Interfaces
         Task<FolderDTO> CreateFolderAsync(FolderDTO folderDTO);
         Task<Folder?> GetFolderByIdAsync(int folderId);
         Task<Folder?> GetFolderByNameAsync(string folderName);
-        Task<IEnumerable<Folder>> GetAllFoldersAsync();
+        Task<List<FolderTreeNodeDTO>> GetTreeForUserAsync(int userId);
         Task<bool> UpdateFolderAsync(Folder folder);
         Task<bool> DeleteFolderAsync(int folderId);
     }

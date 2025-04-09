@@ -1,5 +1,6 @@
 ﻿using MiniDropBox.Application.DTOs;
 using MiniDropBox.Application.Interfaces;
+using MiniDropBox.Application.Interfaces.Helpers;
 using MiniDropBox.Application.Interfaces.UnitOfWork;
 using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
@@ -11,14 +12,16 @@ namespace MiniDropBox.Application.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IUserRoleRepository _userRoleRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IPasswordService _passwordService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public UserService(IUserRepository userRepository, IUserRoleRepository userRoleRepository, IRoleRepository roleRepository, IUnitOfWork unitOfWork)
+        public UserService(IUserRepository userRepository, IUserRoleRepository userRoleRepository, IRoleRepository roleRepository, IUnitOfWork unitOfWork, IPasswordService passwordService)
         {
             _userRepository = userRepository;
             _userRoleRepository = userRoleRepository;
             _roleRepository = roleRepository;
             _unitOfWork = unitOfWork;
+            _passwordService = passwordService;
         }
 
         public async Task<Result<UserDTO>> CreateUserAsync(UserDTO userDTO)
@@ -27,38 +30,43 @@ namespace MiniDropBox.Application.Implementations
 
             try
             {
-                var defaultRole = await _roleRepository.GetByIdAsync(1);
+                var defaultRole = await _roleRepository.GetByNameAsync("User");
                 if (defaultRole == null)
                 {
                     return Result<UserDTO>.Failure("Default role not found");
                 }
 
-                //To add (verify if user exists by email or username)
+                var existingUser = await _userRepository.GetByEmailOrUsernameAsync(userDTO.Email, userDTO.UserName);
+                if (existingUser != null)
+                {
+                    return Result<UserDTO>.Failure("User with this email or username already exists");
+                }
+
+                var hashedPassword = _passwordService.HashPassword(userDTO.Password);
+
                 var user = new User
                 {
-                    Id = userDTO.Id,
                     Username = userDTO.UserName,
-                    Password = userDTO.Password, //Change by password hash later
+                    Password = hashedPassword,
                     Email = userDTO.Email,
                     CreatedAt = DateTime.UtcNow,
                 };
-                var createdUser = await _userRepository.AddAsync(user);
+
+                await _userRepository.AddAsync(user);
 
                 var userRole = new UserRole
                 {
-                    UserId = createdUser.Id,
+                    User = user,
                     RoleId = defaultRole.Id
                 };
 
                 await _userRoleRepository.AddAsync(userRole);
-
                 await _unitOfWork.CommitAsync();
 
                 return Result<UserDTO>.Success(new UserDTO(
-                    createdUser.Id,
-                    createdUser.Username,
-                    createdUser.Email,
-                    createdUser.Password
+                    user.Username,
+                    user.Email,
+                    user.Password
                 ));
             }
             catch (Exception)

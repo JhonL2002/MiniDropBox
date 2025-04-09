@@ -10,14 +10,16 @@ namespace MiniDropBox.API.Controllers
     public class FolderController : ControllerBase
     {
         private readonly IFolderService _folderService;
+        private readonly ICurrentUserService _currentUser;
 
-        public FolderController(IFolderService folderService)
+        public FolderController(IFolderService folderService, ICurrentUserService currentUser)
         {
             _folderService = folderService;
+            _currentUser = currentUser;
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(FolderDTO), 201)]
+        [ProducesResponseType(typeof(FolderDTO), 200)]
         [ProducesResponseType(typeof(string), 400)]
         public async Task<IActionResult> CreateFolder([FromBody] FolderDTO folderDTO)
         {
@@ -28,7 +30,20 @@ namespace MiniDropBox.API.Controllers
 
             var folder = await _folderService.CreateFolderAsync(folderDTO);
 
-            return CreatedAtAction(nameof(CreateFolder), new { id = folder.Id}, folder);
+            return Ok(folder);
+        }
+
+        [HttpGet("tree")]
+        [Authorize]
+        public async Task<IActionResult> GetFolderTree()
+        {
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var tree = await _folderService.GetTreeForUserAsync(userId);
+            return Ok(tree);
         }
 
         [HttpGet("{folderId}")]
@@ -40,31 +55,6 @@ namespace MiniDropBox.API.Controllers
                 return NotFound();
             }
             return Ok(folder);
-        }
-
-        [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<FolderDTO>), 200)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(401)]
-        [Authorize(Roles = "Default Role")]
-        public async Task<IActionResult> GetAllFolders()
-        {
-            if(!User.IsInRole("Default Role"))
-            {
-                return Forbid();
-            }
-
-            if (!User.Identity!.IsAuthenticated)
-            {
-                return Unauthorized();
-            }
-
-            var result = await _folderService.GetAllFoldersAsync();
-            if (result == null)
-            {
-                return NoContent();
-            }
-            return Ok(result);
         }
 
         [HttpDelete("{folderId}")]

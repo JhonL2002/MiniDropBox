@@ -7,5 +7,6 @@ namespace MiniDropBox.Application.Interfaces
     {
         Task<UserRoleDTO> CreateUserRoleAsync(UserRoleDTO userRoleDTO);
         Task<IEnumerable<UserRole>> GetAllUserRolesAsync();
+        Task<Result<string>> UpdateAsync(UserRoleDTO userRoleDTO);
     }
 }

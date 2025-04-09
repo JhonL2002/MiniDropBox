@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using MiniDropBox.Application.DTOs;
 using MiniDropBox.Application.Interfaces;
+using MiniDropBox.Application.Interfaces.Helpers;
 using MiniDropBox.Core.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,28 +15,30 @@ namespace MiniDropBox.Application.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IUserRoleRepository _userRoleRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IPasswordService _passwordService;
         private readonly IConfiguration _configuration;
 
-        public AuthenticationService(IUserRepository userRepository, IConfiguration configuration, IUserRoleRepository userRoleRepository, IRoleRepository roleRepository)
+        public AuthenticationService(IUserRepository userRepository, IConfiguration configuration, IUserRoleRepository userRoleRepository, IRoleRepository roleRepository, IPasswordService passwordService)
         {
             _userRepository = userRepository;
             _configuration = configuration;
             _userRoleRepository = userRoleRepository;
             _roleRepository = roleRepository;
+            _passwordService = passwordService;
         }
 
         public async Task<Result<string>> Authenticate(string username, string password)
         {
             var secretKey = _configuration["JwtSettings:JwtKey"];
 
-            var user = (await _userRepository.GetByUsernameAsync(username));
+            var user = await _userRepository.GetByUsernameAsync(username);
 
             if (user == null)
             {
                 return Result<string>.Failure("User does not exist");
             }
 
-            if (user.Password != password || user.Username != username)
+            if (!_passwordService.VerifyPassword(password, user.Password))
             {
                 return Result<string>.Failure("Invalid login attempt, verify credentials");
             }

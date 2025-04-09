@@ -26,14 +26,21 @@ namespace MiniDropBox.API.Controllers
         [Authorize]
         public async Task<IActionResult> UploadFile([FromForm] UploadFileDTO<IFormFile> uploadFileDTO)
         {
-            var folder = await _folderService.GetFolderByNameAsync(uploadFileDTO.FolderPath);
+            var folder = await _folderService.GetFolderByIdAsync(uploadFileDTO.FolderId);
 
             if (folder == null)
             {
                 return NotFound();
             }
 
-            string filePath = await _fileStorageService.UploadFileAsync(uploadFileDTO);
+            var receivedUploadFileDTO = new UploadFileDTO<IFormFile>
+            (
+                uploadFileDTO.File,
+                uploadFileDTO.FolderId,
+                folder.Path
+            );
+
+            string filePath = await _fileStorageService.UploadStreamAsync(receivedUploadFileDTO);
 
             var newFileDTO = new FileDTO(
                 uploadFileDTO.File.FileName,

@@ -9,10 +9,13 @@
         public DateTime CreatedAt { get; set; }
         public DateTime LastLogin { get; set; }
 
-        //Relationship with file
+        //Relationship with File
         public ICollection<File> Files { get; set; }
 
-        //Relationship with folder
+        //Relationship with Folder
         public ICollection<Folder> Folders { get; set; }
+
+        //Relationship with UserRole
+        public ICollection<UserRole> UserRoles { get; set; }
     }
 }

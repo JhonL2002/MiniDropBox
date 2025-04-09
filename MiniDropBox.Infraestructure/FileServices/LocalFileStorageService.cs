@@ -9,7 +9,7 @@ namespace MiniDropBox.Infraestructure.FileServices
     {
         private readonly string _basePath = "E:/MiniDropBox/Root";
 
-        public Task<bool> DeleteFileAsync(string filePath)
+        public Task<bool> DeleteStreamAsync(string filePath)
         {
             if (File.Exists(filePath))
             {
@@ -19,7 +19,7 @@ namespace MiniDropBox.Infraestructure.FileServices
             return Task.FromResult(false);
         }
 
-        public Task<Stream?> GetFileAsync(string filePath)
+        public Task<Stream?> DownloadStreamAsync(string filePath)
         {
             if (File.Exists(filePath))
             {
@@ -28,7 +28,7 @@ namespace MiniDropBox.Infraestructure.FileServices
             return Task.FromResult<Stream?>(null);
         }
 
-        public async Task<string> UploadFileAsync(UploadFileDTO<IFormFile> fileDTO)
+        public async Task<string> UploadStreamAsync(UploadFileDTO<IFormFile> fileDTO)
         {
             var directoryPath = Path.Combine(_basePath, fileDTO.FolderPath);
 

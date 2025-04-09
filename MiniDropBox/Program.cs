@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MiniDropBox.Application.Injections;
 using Microsoft.IdentityModel.Tokens;
-using MiniDropBox.Config;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using MiniDropBox.API.Swagger;
+using MiniDropBox.Infraestructure.Injections;
+using MiniDropBox.Infraestructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,8 @@ builder.Services.AddApplicationDependencies();
 
 //Add application services
 builder.Services.AddApplicationServices();
+
+builder.Services.AddDatabaseProvider(builder.Configuration);
 
 //Add swagger services
 builder.Services.AddEndpointsApiExplorer();

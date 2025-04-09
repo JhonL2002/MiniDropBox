@@ -1,59 +1,56 @@
-﻿using MiniDropBox.Core.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
+using MiniDropBox.Infraestructure.Data;
 
 namespace MiniDropBox.Infraestructure.Repositories
 {
     public class UserRoleRepository : IUserRoleRepository
     {
-        public List<UserRole> UsersRoles { get; set; } = new();
+        private readonly AppDbContext _context;
+
+        public UserRoleRepository(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public Task<UserRole> AddAsync(UserRole userRole)
         {
-            userRole.Id = UsersRoles.Count + 1;
-            UsersRoles.Add(userRole);
+            _context.UserRoles.Add(userRole);
             return Task.FromResult(userRole);
         }
 
-        public Task<UserRole?> DeleteAsync(int userRoleId)
+        public async Task<UserRole?> DeleteAsync(int userId, int roleId)
         {
-            var userRole = UsersRoles.FirstOrDefault(f => f.Id == userRoleId);
-            if (userRole != null)
+            var existing = await _context.UserRoles
+                .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+
+            if (existing != null)
             {
-                UsersRoles.Remove(userRole);
-                return Task.FromResult<UserRole?>(userRole);
+                _context.UserRoles.Remove(existing);
             }
-
-            return Task.FromResult<UserRole?>(null);
+            return existing;
         }
 
-        public Task<IEnumerable<UserRole>> GetAllAsync()
+        public async Task<IEnumerable<UserRole>> GetAllAsync()
         {
-            return Task.FromResult(UsersRoles.AsEnumerable());
+            return await _context.UserRoles.ToListAsync();
         }
 
-        public Task<UserRole?> GetByIdAsync(int userRoleId)
+        public async Task<UserRole?> GetByUserIdAsync(int userId)
         {
-            var userRole = UsersRoles.FirstOrDefault(ur => ur.Id == userRoleId);
-            return Task.FromResult(userRole);
-
+            return await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId);
         }
 
-        public Task<UserRole?> GetByUserIdAsync(int userId)
+        public async Task<UserRole?> UpdateAsync(UserRole updatedUserRole)
         {
-            var userRole = UsersRoles.FirstOrDefault(ur => ur.UserId == userId);
-            return Task.FromResult(userRole);
-        }
-
-        public Task<UserRole?> UpdateAsync(UserRole userRole)
-        {
-            var existingUserRole = UsersRoles.FirstOrDefault(f => f.Id == userRole.Id);
+            var existingUserRole = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == updatedUserRole.UserId);
             if (existingUserRole != null)
             {
-                existingUserRole.RoleId = userRole.RoleId;
-                return Task.FromResult<UserRole?>(existingUserRole);
+                existingUserRole.RoleId = updatedUserRole.RoleId;
+                return existingUserRole;
             }
-
-            return Task.FromResult<UserRole?>(null);
+            return null;
         }
     }
 }
