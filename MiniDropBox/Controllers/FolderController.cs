@@ -57,6 +57,22 @@ namespace MiniDropBox.API.Controllers
             return Ok(folder);
         }
 
+        [HttpPut("move")]
+        [Authorize]
+        public async Task<IActionResult> MoveFolder([FromBody] MoveFolderDTO moveFolderDTO)
+        {
+            // Validate current user
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+                return Unauthorized();
+
+            var result = await _folderService.MoveFolderAsync(moveFolderDTO, userId);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error);
+
+            return Ok(result.Value);
+        }
+
         [HttpDelete("{folderId}")]
         public async Task<IActionResult> DeleteFolder(int folderId)
         {
