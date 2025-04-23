@@ -7,6 +7,7 @@ namespace MiniDropBox.Core.Repositories
         Task<File> AddAsync(File file);
         Task<File?> GetByIdAsync(int fileId);
         Task<IEnumerable<File>> GetAllAsync();
+        Task<IEnumerable<File>> GetFilesByFolderIdAsync(int folderId);
         Task<File?> UpdateAsync(File file);
         Task<File?> DeleteAsync(int fileId);
     }

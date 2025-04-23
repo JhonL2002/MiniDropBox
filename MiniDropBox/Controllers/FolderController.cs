@@ -7,6 +7,7 @@ namespace MiniDropBox.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FolderController : ControllerBase
     {
         private readonly IFolderService _folderService;
@@ -21,20 +22,28 @@ namespace MiniDropBox.API.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(FolderDTO), 200)]
         [ProducesResponseType(typeof(string), 400)]
+        [ProducesResponseType(typeof(string), 401)]
         public async Task<IActionResult> CreateFolder([FromBody] FolderDTO folderDTO)
         {
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+            {
+                return Unauthorized();
+            }
+
             if (folderDTO == null || string.IsNullOrWhiteSpace(folderDTO.Name))
             {
                 return BadRequest("Folder name cannot be empty");
             }
 
-            var folder = await _folderService.CreateFolderAsync(folderDTO);
+            var result = await _folderService.CreateFolderAsync(folderDTO, userId);
 
-            return Ok(folder);
+            if (!result.IsSuccess)
+                return BadRequest(result.Error);
+
+            return Ok(result.Value);
         }
 
         [HttpGet("tree")]
-        [Authorize]
         public async Task<IActionResult> GetFolderTree()
         {
             if (!int.TryParse(_currentUser.UserId, out var userId))
@@ -58,7 +67,6 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpPut("move")]
-        [Authorize]
         public async Task<IActionResult> MoveFolder([FromBody] MoveFolderDTO moveFolderDTO)
         {
             // Validate current user

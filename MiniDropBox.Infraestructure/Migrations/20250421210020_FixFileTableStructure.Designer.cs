@@ -12,8 +12,8 @@ using MiniDropBox.Infraestructure.Data;
 namespace MiniDropBox.Infraestructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250408184306_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250421210020_FixFileTableStructure")]
+    partial class FixFileTableStructure
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -57,16 +57,11 @@ namespace MiniDropBox.Infraestructure.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("UserId1")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FolderId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("Files");
                 });
@@ -189,14 +184,10 @@ namespace MiniDropBox.Infraestructure.Migrations
                         .IsRequired();
 
                     b.HasOne("MiniDropBox.Core.Models.User", "User")
-                        .WithMany()
+                        .WithMany("Files")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("MiniDropBox.Core.Models.User", null)
-                        .WithMany("Files")
-                        .HasForeignKey("UserId1");
 
                     b.Navigation("Folder");
 
@@ -210,13 +201,15 @@ namespace MiniDropBox.Infraestructure.Migrations
                         .HasForeignKey("ParentFolderId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("MiniDropBox.Core.Models.User", null)
+                    b.HasOne("MiniDropBox.Core.Models.User", "User")
                         .WithMany("Folders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("ParentFolder");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MiniDropBox.Core.Models.UserRole", b =>

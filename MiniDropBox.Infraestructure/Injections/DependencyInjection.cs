@@ -23,7 +23,7 @@ namespace MiniDropBox.Infraestructure.Injections
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 
             services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<IFileStorageService<IFormFile>, BlobStorageService>();
+            services.AddScoped<IFileStorageService, BlobStorageService>();
             services.AddScoped<IFileRepository, FileRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();

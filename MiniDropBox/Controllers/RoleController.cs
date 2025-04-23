@@ -27,7 +27,7 @@ namespace MiniDropBox.API.Controllers
 
             var role = await _roleService.CreateRoleAsync(roleDTO);
 
-            return CreatedAtAction(nameof(CreateRole), new { id = role.Id }, role);
+            return Ok(role);
         }
     }
 }

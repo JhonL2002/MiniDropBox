@@ -15,7 +15,7 @@ namespace MiniDropBox.Infraestructure.Data.EntityConfiguration
 
             //Relationships
             builder.HasOne(f => f.User)
-                .WithMany()
+                .WithMany(u => u.Files)
                 .HasForeignKey(f => f.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 

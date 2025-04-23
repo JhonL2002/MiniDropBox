@@ -1,4 +1,4 @@
 ﻿namespace MiniDropBox.Application.DTOs
 {
-    public record RoleDTO(int Id, string Name, string Description);
+    public record RoleDTO(string Name, string Description);
 }

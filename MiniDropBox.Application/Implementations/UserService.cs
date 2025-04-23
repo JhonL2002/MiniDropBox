@@ -12,16 +12,18 @@ namespace MiniDropBox.Application.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IUserRoleRepository _userRoleRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IFolderRepository _folderRepository;
         private readonly IPasswordService _passwordService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public UserService(IUserRepository userRepository, IUserRoleRepository userRoleRepository, IRoleRepository roleRepository, IUnitOfWork unitOfWork, IPasswordService passwordService)
+        public UserService(IUserRepository userRepository, IUserRoleRepository userRoleRepository, IRoleRepository roleRepository, IUnitOfWork unitOfWork, IPasswordService passwordService, IFolderRepository folderRepository)
         {
             _userRepository = userRepository;
             _userRoleRepository = userRoleRepository;
             _roleRepository = roleRepository;
             _unitOfWork = unitOfWork;
             _passwordService = passwordService;
+            _folderRepository = folderRepository;
         }
 
         public async Task<Result<UserDTO>> CreateUserAsync(UserDTO userDTO)
@@ -53,6 +55,18 @@ namespace MiniDropBox.Application.Implementations
                 };
 
                 await _userRepository.AddAsync(user);
+
+                // Create the root folder for the user
+                var rootFolder = new Folder
+                {
+                    Name = $"{user.Username}",
+                    User = user,
+                    CreatedAt = DateTime.UtcNow,
+                    Path = $"{user.Username}",
+                    ParentFolderId = null
+                };
+
+                await _folderRepository.AddAsync(rootFolder);
 
                 var userRole = new UserRole
                 {

@@ -30,7 +30,6 @@ namespace MiniDropBox.Application.Implementations
             {
                 var role = new Role
                 {
-                    Id = roleDTO.Id,
                     Name = roleDTO.Name,
                     Description = roleDTO.Description
                 };
@@ -40,7 +39,6 @@ namespace MiniDropBox.Application.Implementations
                 await _unitOfWork.CommitAsync();
 
                 return new RoleDTO(
-                    createdRole.Id,
                     createdRole.Name,
                     createdRole.Description
                 );

@@ -11,49 +11,69 @@ namespace MiniDropBox.Application.Implementations
     public class FolderService : IFolderService
     {
         private readonly IFolderRepository _folderRepository;
+        private readonly IFileRepository _fileRepository;
+        private readonly ICurrentUserService _currentUser;
         private readonly IFolderTreeBuilderService _treeBuilder;
         private readonly IUnitOfWork _unitOfWork;
 
-        public FolderService(IFolderRepository folderRepository, IFolderTreeBuilderService treeBuilder, IUnitOfWork unitOfWork)
+        public FolderService(IFolderRepository folderRepository, IFolderTreeBuilderService treeBuilder, IUnitOfWork unitOfWork, IFileRepository fileRepository, ICurrentUserService currentUser)
         {
             _folderRepository = folderRepository;
             _treeBuilder = treeBuilder;
             _unitOfWork = unitOfWork;
+            _fileRepository = fileRepository;
+            _currentUser = currentUser;
         }
 
-        public async Task<FolderDTO> CreateFolderAsync(FolderDTO folderDTO)
+        public async Task<Result<FolderDTO>> CreateFolderAsync(FolderDTO folderDTO, int userId)
         {
             await _unitOfWork.BeginTransactionAsync();
 
             try
             {
-                var parentFolder = await _folderRepository.GetByIdAsync(folderDTO.ParentFolderId!.Value);
-                bool isSubFolder = parentFolder != null;
+                Folder parentFolder = null!;
+
+                // Validate if is trying to create a root folder
+                bool isRootFolder = !folderDTO.ParentFolderId.HasValue;
+
+                if (isRootFolder)
+                {
+                    bool isAdmin = _currentUser.IsInRole("Admin");
+                    if (!isAdmin)
+                        return Result<FolderDTO>.Failure("You cannot create root folders");
+                }
+
+                if (folderDTO.ParentFolderId.HasValue)
+                {
+                    parentFolder = (await _folderRepository.GetByIdAsync(folderDTO.ParentFolderId.Value))!;
+                    if (parentFolder == null || parentFolder.UserId != userId)
+                        return Result<FolderDTO>.Failure("Invalid parent folder");
+                }
+
+                var newPath = parentFolder != null
+                    ? Path.Combine(parentFolder.Path, folderDTO.Name)
+                    : folderDTO.Name;
 
                 var folder = new Folder
                 {
                     Name = folderDTO.Name,
-                    ParentFolderId = isSubFolder ? folderDTO.ParentFolderId : null,
-                    UserId = folderDTO.UserId,
+                    ParentFolderId = folderDTO.ParentFolderId,
+                    ParentFolder = parentFolder,
+                    UserId = userId,
                     CreatedAt = DateTime.UtcNow,
-                    Path = isSubFolder
-                        ? Path.Combine($"{parentFolder!.Path}", $"{folderDTO.Name}")
-                        : Path.Combine($"{folderDTO.Name}", $"{folderDTO.UserId}")
+                    Path = newPath
                 };
-
-                if (isSubFolder)
-                {
-                    folder.ParentFolder = parentFolder;
-                }
 
                 var createdFolder = await _folderRepository.AddAsync(folder);
                 await _unitOfWork.CommitAsync();
 
-                return new FolderDTO(
+                var resultDTO = new FolderDTO
+                (
                     createdFolder.Name,
-                    createdFolder.ParentFolderId,
-                    createdFolder.UserId
+                    createdFolder.ParentFolderId
                 );
+
+                return Result<FolderDTO>.Success(resultDTO);
             }
             catch (Exception)
             {
@@ -140,6 +160,7 @@ namespace MiniDropBox.Application.Implementations
                 // Update the folder's and subfolders path 
                 folder.Path = Path.Combine(newParent.Path, folder.Name);
                 UpdateSubfolderPathsRecursively(folder);
+                await UpdateFilePathsRecursively(folder);
 
                 await _folderRepository.UpdateAsync(folder);
                 await _unitOfWork.CommitAsync();
@@ -206,7 +227,7 @@ namespace MiniDropBox.Application.Implementations
             }
         }
 
-        // Auxiliar method to update folder path recursively
+        // Auxiliary method to update folder path recursively
         private void UpdateSubfolderPathsRecursively(Folder folder)
         {
             foreach (var sub in folder.SubFolders)
@@ -215,5 +236,23 @@ namespace MiniDropBox.Application.Implementations
                 UpdateSubfolderPathsRecursively(sub);
             }
         }
+
+        // Auxiliary method to update files inside folders path recursively
+        private async Task UpdateFilePathsRecursively(Folder folder)
+        {
+            var filesInFolder = await _fileRepository.GetFilesByFolderIdAsync(folder.Id);
+
+            foreach(var file in filesInFolder)
+            {
+                file.Path = Path.Combine(folder.Path, file.Name);
+                await _fileRepository.UpdateAsync(file);
+            }
+
+            foreach (var sub in folder.SubFolders)
+            {
+                await UpdateFilePathsRecursively(sub);
+            }
+        }
     }
+
 }

@@ -1,9 +1,11 @@
 ﻿using MiniDropBox.Application.DTOs;
+using MiniDropBox.Application.Interfaces.FileServices;
 
 namespace MiniDropBox.Application.Interfaces
 {
     public interface IFileService
     {
-        public Task<FileDTO> UploadFileAsync(FileDTO fileDTO);
+        public Task<Result<FileDTO>> UploadFileAsync(UploadFileDTO<IFileUpload> uploadFileDTO, int userId);
+        public Task<Result<string>> MoveFileAsync(MoveFileDTO moveFileDTO, int userId);
     }
 }

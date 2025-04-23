@@ -17,5 +17,8 @@
 
         //Relationship with parent folder
         public Folder? ParentFolder { get; set; }
+
+        // Relationship with user
+        public User User { get; set; }
     }
 }

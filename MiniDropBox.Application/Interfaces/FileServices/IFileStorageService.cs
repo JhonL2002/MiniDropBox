@@ -2,10 +2,11 @@
 
 namespace MiniDropBox.Application.Interfaces.FileServices
 {
-    public interface IFileStorageService<T>
+    public interface IFileStorageService
     {
-        Task<string> UploadStreamAsync(UploadFileDTO<T> uploadFileDTO);
-        Task<bool> DeleteStreamAsync(string filePath);
-        Task<Stream?> DownloadStreamAsync(string filePath);
+        Task MoveBlobAsync(string oldPath, string newPath);
+        Task<string> UploadStreamAsync(UploadFileDTO<IFileUpload> uploadFileDTO);
+        Task<bool> DeleteStreamAsync(string fullPath);
+        Task<Stream?> DownloadStreamAsync(string fullPath);
     }
 }

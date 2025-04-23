@@ -16,6 +16,11 @@ namespace MiniDropBox.Infraestructure.Data.EntityConfiguration
                 .WithMany(f => f.SubFolders)
                 .HasForeignKey(f => f.ParentFolderId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(f => f.User)
+                .WithMany(u => u.Folders)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -7,7 +7,7 @@ using MiniDropBox.Application.Interfaces.FileServices;
 
 namespace MiniDropBox.Infraestructure.FileServices.CloudServices
 {
-    public class BlobStorageService : IFileStorageService<IFormFile>
+    public class BlobStorageService : IFileStorageService
     {
         private readonly BlobServiceClient _blobServiceClient;
         private readonly string _containerName;
@@ -22,27 +22,28 @@ namespace MiniDropBox.Infraestructure.FileServices.CloudServices
             _containerName = configuration["AZURE_CONNECTION_STRINGS:BLOB_CONTAINER"]!;
         }
 
-        private BlobClient CreateBlobClient(string fileName)
+        private BlobClient CreateBlobClient(string fullPath)
         {
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-            return containerClient.GetBlobClient(fileName);
+            return containerClient.GetBlobClient(fullPath);
         }
 
-        public async Task<string> UploadStreamAsync(UploadFileDTO<IFormFile> uploadFileDTO)
+        public async Task<string> UploadStreamAsync(UploadFileDTO<IFileUpload> uploadFileDTO)
         {
-            var blobClient = CreateBlobClient(uploadFileDTO.File.FileName);
-
             await using var stream = uploadFileDTO.File.OpenReadStream();
+
+            var fullBlobPath = Path.Combine(uploadFileDTO.FolderPath, uploadFileDTO.File.FileName).Replace("\\","/");
+
+            var blobClient = CreateBlobClient(fullBlobPath);
 
             await blobClient.UploadAsync(stream, overwrite: true);
 
-            var filePath = Path.Combine(uploadFileDTO.FolderPath, blobClient.Name);
-            return filePath;
+            return fullBlobPath;
         }
 
-        public async Task<bool> DeleteStreamAsync(string fileName)
+        public async Task<bool> DeleteStreamAsync(string filePath)
         {
-            var blobClient = CreateBlobClient(fileName);
+            var blobClient = CreateBlobClient(filePath);
             var result = await blobClient.DeleteIfExistsAsync();
             if (!result)
             {
@@ -55,6 +56,24 @@ namespace MiniDropBox.Infraestructure.FileServices.CloudServices
         {
             var blobClient = CreateBlobClient(fileName);
             return await blobClient.ExistsAsync() ? await blobClient.OpenReadAsync() : null;
+        }
+
+        public async Task MoveBlobAsync(string oldPath, string newPath)
+        {
+            var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+
+            var sourceBlob = containerClient.GetBlobClient(oldPath);
+            var destinationBlob = containerClient.GetBlobClient(newPath);
+
+            // Verify if original blob exists
+            if (!await sourceBlob.ExistsAsync())
+                throw new FileNotFoundException($"Blob not found at path: {oldPath}");
+
+            // Copy to new blob
+            await destinationBlob.StartCopyFromUriAsync(sourceBlob.Uri);
+
+            // Delete the original blob
+            await sourceBlob.DeleteIfExistsAsync();
         }
     }
 }

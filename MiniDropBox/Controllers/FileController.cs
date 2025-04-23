@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniDropBox.API.ApiDTOs;
 using MiniDropBox.Application.DTOs;
 using MiniDropBox.Application.Interfaces;
 using MiniDropBox.Application.Interfaces.FileServices;
+using MiniDropBox.Infraestructure.Adapters;
 using System.Security.Claims;
 
 namespace MiniDropBox.API.Controllers
@@ -11,48 +13,49 @@ namespace MiniDropBox.API.Controllers
     [ApiController]
     public class FileController : ControllerBase
     {
-        private readonly IFolderService _folderService;
-        private readonly IFileStorageService<IFormFile> _fileStorageService;
         private readonly IFileService _fileService;
+        private readonly ICurrentUserService _currentUser;
 
-        public FileController(IFolderService folderService, IFileStorageService<IFormFile> fileStorageService, IFileService fileService)
+        public FileController(IFileService fileService, ICurrentUserService currentUser)
         {
-            _folderService = folderService;
-            _fileStorageService = fileStorageService;
             _fileService = fileService;
+            _currentUser = currentUser;
         }
 
         [HttpPost("upload")]
         [Authorize]
-        public async Task<IActionResult> UploadFile([FromForm] UploadFileDTO<IFormFile> uploadFileDTO)
+        public async Task<IActionResult> UploadFile([FromForm] UploadFileFormDTO formData)
         {
-            var folder = await _folderService.GetFolderByIdAsync(uploadFileDTO.FolderId);
-
-            if (folder == null)
+            if (!int.TryParse(_currentUser.UserId, out var userId))
             {
-                return NotFound();
+                return Unauthorized();
             }
 
-            var receivedUploadFileDTO = new UploadFileDTO<IFormFile>
-            (
-                uploadFileDTO.File,
-                uploadFileDTO.FolderId,
-                folder.Path
+            var uploadDTO = new UploadFileDTO<IFileUpload>(
+                new FormFileAdapter(formData.File),
+                formData.FolderId,
+                ""
             );
 
-            string filePath = await _fileStorageService.UploadStreamAsync(receivedUploadFileDTO);
+            var result = await _fileService.UploadFileAsync(uploadDTO, userId);
 
-            var newFileDTO = new FileDTO(
-                uploadFileDTO.File.FileName,
-                uploadFileDTO.File.Length,
-                Path.GetExtension(uploadFileDTO.File.FileName),
-                filePath,
-                int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
-                folder.Id
-            );
+            return result.IsSuccess
+                ? Ok(result.Value)
+                : BadRequest(result.Error);
+        }
 
-            var file = await _fileService.UploadFileAsync(newFileDTO);
-            return Ok(file);
+        [HttpPut("move")]
+        [Authorize]
+        public async Task<IActionResult> MoveFile([FromBody] MoveFileDTO moveFileDTO)
+        {
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+                return Unauthorized();
+
+            var result = await _fileService.MoveFileAsync(moveFileDTO, userId);
+
+            return result.IsSuccess
+                ? Ok(result.Value)
+                : BadRequest(result.Error);
         }
     }
 }

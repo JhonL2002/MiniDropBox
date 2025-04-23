@@ -44,6 +44,15 @@ namespace MiniDropBox.Infraestructure.Repositories
             return file;
         }
 
+        public async Task<IEnumerable<File>> GetFilesByFolderIdAsync(int folderId)
+        {
+            var files = await _context.Files
+                .Where(f => f.FolderId == folderId)
+                .ToListAsync();
+
+            return files;
+        }
+
         public async Task<File?> UpdateAsync(File file)
         {
             var existingFile = await _context.Files.FindAsync(file.Id);

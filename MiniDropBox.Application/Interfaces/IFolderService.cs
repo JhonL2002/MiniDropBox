@@ -6,7 +6,7 @@ namespace MiniDropBox.Application.Interfaces
 {
     public interface IFolderService
     {
-        Task<FolderDTO> CreateFolderAsync(FolderDTO folderDTO);
+        Task<Result<FolderDTO>> CreateFolderAsync(FolderDTO folderDTO, int userId);
         Task<Folder?> GetFolderByIdAsync(int folderId);
         Task<Folder?> GetFolderByNameAsync(string folderName);
         Task<List<FolderTreeNodeDTO>> GetTreeForUserAsync(int userId);

@@ -5,7 +5,7 @@ using MiniDropBox.Core.Repositories;
 
 namespace MiniDropBox.Infraestructure.FileServices
 {
-    public class LocalFileStorageService : IFileStorageService<IFormFile>
+    public class LocalFileStorageService : IFileStorageService
     {
         private readonly string _basePath = "E:/MiniDropBox/Root";
 
@@ -28,7 +28,13 @@ namespace MiniDropBox.Infraestructure.FileServices
             return Task.FromResult<Stream?>(null);
         }
 
-        public async Task<string> UploadStreamAsync(UploadFileDTO<IFormFile> fileDTO)
+        public async Task MoveBlobAsync(string oldPath, string newPath)
+        {
+            // You need to implement this method to move the file from oldPath to newPath in your local storage.
+            await Task.CompletedTask;
+        }
+
+        public async Task<string> UploadStreamAsync(UploadFileDTO<IFileUpload> fileDTO)
         {
             var directoryPath = Path.Combine(_basePath, fileDTO.FolderPath);
 
@@ -38,7 +44,7 @@ namespace MiniDropBox.Infraestructure.FileServices
 
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                await fileDTO.File.CopyToAsync(stream);
+                await fileDTO.File.OpenReadStream().CopyToAsync(stream);
             }
 
             return filePath;

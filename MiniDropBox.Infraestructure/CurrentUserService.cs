@@ -15,5 +15,8 @@ namespace MiniDropBox.Infraestructure
 
         public string? UserId =>
             _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        public bool IsInRole(string role) =>
+            _httpContextAccessor.HttpContext?.User.IsInRole(role) ?? false;
     }
 }
