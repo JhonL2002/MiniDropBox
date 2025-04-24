@@ -14,99 +14,75 @@ namespace MiniDropBox.Application.Implementations
         private readonly IFileRepository _fileRepository;
         private readonly ICurrentUserService _currentUser;
         private readonly IFolderTreeBuilderService _treeBuilder;
-        private readonly IUnitOfWork _unitOfWork;
 
-        public FolderService(IFolderRepository folderRepository, IFolderTreeBuilderService treeBuilder, IUnitOfWork unitOfWork, IFileRepository fileRepository, ICurrentUserService currentUser)
+        public FolderService(IFolderRepository folderRepository, IFolderTreeBuilderService treeBuilder, IFileRepository fileRepository, ICurrentUserService currentUser)
         {
             _folderRepository = folderRepository;
             _treeBuilder = treeBuilder;
-            _unitOfWork = unitOfWork;
             _fileRepository = fileRepository;
             _currentUser = currentUser;
         }
 
         public async Task<Result<FolderDTO>> CreateFolderAsync(FolderDTO folderDTO, int userId)
         {
-            await _unitOfWork.BeginTransactionAsync();
+            Folder parentFolder = null!;
 
-            try
+            // Validate if is trying to create a root folder
+            bool isRootFolder = !folderDTO.ParentFolderId.HasValue;
+
+            if (isRootFolder)
             {
-                Folder parentFolder = null!;
-
-                // Validate if is trying to create a root folder
-                bool isRootFolder = !folderDTO.ParentFolderId.HasValue;
-
-                if (isRootFolder)
-                {
-                    bool isAdmin = _currentUser.IsInRole("Admin");
-                    if (!isAdmin)
-                        return Result<FolderDTO>.Failure("You cannot create root folders");
-                }
-
-                if (folderDTO.ParentFolderId.HasValue)
-                {
-                    parentFolder = (await _folderRepository.GetByIdAsync(folderDTO.ParentFolderId.Value))!;
-                    if (parentFolder == null || parentFolder.UserId != userId)
-                        return Result<FolderDTO>.Failure("Invalid parent folder");
-                }
-
-                var newPath = parentFolder != null
-                    ? Path.Combine(parentFolder.Path, folderDTO.Name)
-                    : folderDTO.Name;
-
-                var folder = new Folder
-                {
-                    Name = folderDTO.Name,
-                    ParentFolderId = folderDTO.ParentFolderId,
-                    ParentFolder = parentFolder,
-                    UserId = userId,
-                    CreatedAt = DateTime.UtcNow,
-                    Path = newPath
-                };
-
-                var createdFolder = await _folderRepository.AddAsync(folder);
-                await _unitOfWork.CommitAsync();
-
-                var resultDTO = new FolderDTO
-                (
-                    createdFolder.Name,
-                    createdFolder.ParentFolderId
-                );
-
-                return Result<FolderDTO>.Success(resultDTO);
+                bool isAdmin = _currentUser.IsInRole("Admin");
+                if (!isAdmin)
+                    return Result<FolderDTO>.Failure("You cannot create root folders");
             }
-            catch (Exception)
+
+            if (folderDTO.ParentFolderId.HasValue)
             {
-                await _unitOfWork.RollbackAsync();
-                throw;
+                parentFolder = (await _folderRepository.GetByIdAsync(folderDTO.ParentFolderId.Value))!;
+                if (parentFolder == null || parentFolder.UserId != userId)
+                    return Result<FolderDTO>.Failure("Invalid parent folder");
             }
+
+            var newPath = parentFolder != null
+                ? Path.Combine(parentFolder.Path, folderDTO.Name)
+                : folderDTO.Name;
+
+            var folder = new Folder
+            {
+                Name = folderDTO.Name,
+                ParentFolderId = folderDTO.ParentFolderId,
+                ParentFolder = parentFolder,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                Path = newPath
+            };
+
+            var createdFolder = await _folderRepository.AddAsync(folder);
+
+            var resultDTO = new FolderDTO
+            (
+                createdFolder.Name,
+                createdFolder.ParentFolderId
+            );
+
+            return Result<FolderDTO>.Success(resultDTO);
         }
 
         public async Task<bool> DeleteFolderAsync(int folderId)
         {
-            await _unitOfWork.BeginTransactionAsync();
-
-            try
+            var folder = await _folderRepository.GetByIdAsync(folderId);
+            if (folder == null)
             {
-                var folder = await _folderRepository.GetByIdAsync(folderId);
-                if (folder == null)
-                {
-                    return false;
-                }
-
-                var hasChildren = folder.SubFolders != null && folder.SubFolders.Count != 0;
-                if (hasChildren)
-                    return false;
-
-                var deletedFolder = await _folderRepository.DeleteAsync(folderId);
-                await _unitOfWork.CommitAsync();
-                return deletedFolder != null;
+                return false;
             }
-            catch (Exception)
-            {
-                await _unitOfWork.RollbackAsync();
-                throw;
-            }
+
+            var hasChildren = folder.SubFolders != null && folder.SubFolders.Count != 0;
+            if (hasChildren)
+                return false;
+
+            var deletedFolder = await _folderRepository.DeleteAsync(folderId);
+            return deletedFolder != null;
         }
 
         public async Task<Folder?> GetFolderByIdAsync(int folderId)
@@ -127,104 +103,82 @@ namespace MiniDropBox.Application.Implementations
 
         public async Task<Result<string>> MoveFolderAsync(MoveFolderDTO moveFolderDTO, int userId)
         {
-            await _unitOfWork.BeginTransactionAsync();
+            var folder = await _folderRepository.GetByIdWithSubfoldersRecursivelyAsync(moveFolderDTO.Id);
+            if (folder == null || folder.UserId != userId)
+                return Result<string>.Failure("Folder not found or you don't have permission");
 
-            try
+            if (folder.Id == moveFolderDTO.NewParentFolderId)
+                return Result<string>.Failure("Cannot ove a folder into itslef");
+
+            var newParent = await _folderRepository.GetByIdAsync(moveFolderDTO.NewParentFolderId);
+            if (newParent == null || newParent.UserId != userId)
+                return Result<string>.Failure("New parent folder not found");
+
+            // Avoid circular reference
+            var temp = newParent;
+            while (temp != null)
             {
-                var folder = await _folderRepository.GetByIdWithSubfoldersRecursivelyAsync(moveFolderDTO.Id);
-                if (folder == null || folder.UserId != userId)
-                    return Result<string>.Failure("Folder not found or you don't have permission");
+                if (temp.Id == folder.Id)
+                    return Result<string>.Failure("Cannot move folder into its descendant (circular reference)");
 
-                if (folder.Id == moveFolderDTO.NewParentFolderId)
-                    return Result<string>.Failure("Cannot ove a folder into itslef");
-
-                var newParent = await _folderRepository.GetByIdAsync(moveFolderDTO.NewParentFolderId);
-                if (newParent == null || newParent.UserId != userId)
-                    return Result<string>.Failure("New parent folder not found");
-
-                // Avoid circular reference
-                var temp = newParent;
-                while (temp != null)
-                {
-                    if (temp.Id == folder.Id)
-                        return Result<string>.Failure("Cannot move folder into its descendant (circular reference)");
-
-                    temp = temp.ParentFolderId != null
-                        ? await _folderRepository.GetByIdAsync(temp.ParentFolderId.Value)
-                        : null;
-                }
-
-                // Update the folder's parent
-                folder.ParentFolderId = newParent.Id;
-
-                // Update the folder's and subfolders path 
-                folder.Path = Path.Combine(newParent.Path, folder.Name);
-                UpdateSubfolderPathsRecursively(folder);
-                await UpdateFilePathsRecursively(folder);
-
-                await _folderRepository.UpdateAsync(folder);
-                await _unitOfWork.CommitAsync();
-
-                return Result<string>.Success($"Folder moved to: {folder.Path}");
+                temp = temp.ParentFolderId != null
+                    ? await _folderRepository.GetByIdAsync(temp.ParentFolderId.Value)
+                    : null;
             }
-            catch (Exception)
-            {
-                await _unitOfWork.RollbackAsync();
-                throw;
-            }
+
+            // Update the folder's parent
+            folder.ParentFolderId = newParent.Id;
+
+            // Update the folder's and subfolders path 
+            folder.Path = Path.Combine(newParent.Path, folder.Name);
+            UpdateSubfolderPathsRecursively(folder);
+            await UpdateFilePathsRecursively(folder);
+
+            await _folderRepository.UpdateAsync(folder);
+
+            return Result<string>.Success($"Folder moved to: {folder.Path}");
         }
 
         public async Task<Result<string>> UpdateFolderAsync(UpdateFolderDTO updateFolderDTO)
         {
-            await _unitOfWork.BeginTransactionAsync();
+            var existing = await _folderRepository.GetByIdAsync(updateFolderDTO.Id);
+            if (existing == null)
+                return Result<string>.Failure("Folder not found");
 
-            try
+            if (updateFolderDTO.ParentFolderId == updateFolderDTO.Id)
+                return Result<string>.Failure("Folder cannot be its own parent");
+
+            Folder? parentFolder = null;
+
+            if (updateFolderDTO.ParentFolderId != null)
             {
-                var existing = await _folderRepository.GetByIdAsync(updateFolderDTO.Id);
-                if (existing == null)
-                    return Result<string>.Failure("Folder not found");
+                parentFolder = await _folderRepository.GetByIdAsync(updateFolderDTO.ParentFolderId.Value);
+                if (parentFolder == null)
+                    return Result<string>.Failure("Parent folder not found");
 
-                if (updateFolderDTO.ParentFolderId == updateFolderDTO.Id)
-                    return Result<string>.Failure("Folder cannot be its own parent");
-
-                Folder? parentFolder = null;
-
-                if (updateFolderDTO.ParentFolderId != null)
+                // Avoid circular reference
+                var temp = parentFolder;
+                while (temp != null)
                 {
-                    parentFolder = await _folderRepository.GetByIdAsync(updateFolderDTO.ParentFolderId.Value);
-                    if (parentFolder == null)
-                        return Result<string>.Failure("Parent folder not found");
+                    if (temp.Id == existing.Id)
+                        return Result<string>.Failure("Cannot assign a child folder as parent (circular reference)");
 
-                    // Avoid circular reference
-                    var temp = parentFolder;
-                    while (temp != null)
-                    {
-                        if (temp.Id == existing.Id)
-                            return Result<string>.Failure("Cannot assign a child folder as parent (circular reference)");
-
-                        temp = temp.ParentFolderId !=null
-                            ? await _folderRepository.GetByIdAsync(temp.ParentFolderId.Value)
-                            : null;
-                    }
+                    temp = temp.ParentFolderId !=null
+                        ? await _folderRepository.GetByIdAsync(temp.ParentFolderId.Value)
+                        : null;
                 }
-
-                existing.Name = updateFolderDTO.Name;
-                existing.ParentFolderId = updateFolderDTO.ParentFolderId;
-
-                existing.Path = parentFolder != null
-                    ? Path.Combine(parentFolder.Path, updateFolderDTO.Name)
-                    : Path.Combine(updateFolderDTO.Name, existing.UserId.ToString());
-
-                var updatedFolder = await _folderRepository.UpdateAsync(existing);
-                await _unitOfWork.CommitAsync();
-
-                return Result<string>.Success($"Uploaded folder, new path: {updatedFolder!.Path} .");
             }
-            catch (Exception)
-            {
-                await _unitOfWork.RollbackAsync();
-                throw;
-            }
+
+            existing.Name = updateFolderDTO.Name;
+            existing.ParentFolderId = updateFolderDTO.ParentFolderId;
+
+            existing.Path = parentFolder != null
+                ? Path.Combine(parentFolder.Path, updateFolderDTO.Name)
+                : Path.Combine(updateFolderDTO.Name, existing.UserId.ToString());
+
+            var updatedFolder = await _folderRepository.UpdateAsync(existing);
+
+            return Result<string>.Success($"Uploaded folder, new path: {updatedFolder!.Path} .");
         }
 
         // Auxiliary method to update folder path recursively

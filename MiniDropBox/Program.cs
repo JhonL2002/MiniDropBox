@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using MiniDropBox.API.Swagger;
 using MiniDropBox.Infraestructure.Injections;
 using MiniDropBox.Infraestructure.Data;
+using MiniDropBox.Infraestructure.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +85,8 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
 
