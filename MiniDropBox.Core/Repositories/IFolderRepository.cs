@@ -8,6 +8,7 @@ namespace MiniDropBox.Core.Repositories
         Task<Folder?> GetByIdAsync(int folderId);
         Task<Folder?> GetByNameAsync(string name);
         Task<Folder?> GetByIdWithSubfoldersRecursivelyAsync(int folderId);
+        Task<Folder?> GetByIdWithFilesRecursivelyAsync(int folderId);
         Task<List<Folder>> GetFoldersByUserIdAsync(int userId);
         Task<Folder?> UpdateAsync(Folder folder);
         Task<Folder?> DeleteAsync(int folderId);

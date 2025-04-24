@@ -1,8 +1,8 @@
 ﻿using MiniDropBox.Application.DTOs;
 using MiniDropBox.Application.DTOs.Nodes;
 using MiniDropBox.Application.Interfaces;
+using MiniDropBox.Application.Interfaces.FileServices;
 using MiniDropBox.Application.Interfaces.Trees;
-using MiniDropBox.Application.Interfaces.UnitOfWork;
 using MiniDropBox.Core.Models;
 using MiniDropBox.Core.Repositories;
 
@@ -12,15 +12,17 @@ namespace MiniDropBox.Application.Implementations
     {
         private readonly IFolderRepository _folderRepository;
         private readonly IFileRepository _fileRepository;
+        private readonly IFileStorageService _fileStorageService;
         private readonly ICurrentUserService _currentUser;
         private readonly IFolderTreeBuilderService _treeBuilder;
 
-        public FolderService(IFolderRepository folderRepository, IFolderTreeBuilderService treeBuilder, IFileRepository fileRepository, ICurrentUserService currentUser)
+        public FolderService(IFolderRepository folderRepository, IFolderTreeBuilderService treeBuilder, IFileRepository fileRepository, ICurrentUserService currentUser, IFileStorageService fileStorageService)
         {
             _folderRepository = folderRepository;
             _treeBuilder = treeBuilder;
             _fileRepository = fileRepository;
             _currentUser = currentUser;
+            _fileStorageService = fileStorageService;
         }
 
         public async Task<Result<FolderDTO>> CreateFolderAsync(FolderDTO folderDTO, int userId)
@@ -69,20 +71,26 @@ namespace MiniDropBox.Application.Implementations
             return Result<FolderDTO>.Success(resultDTO);
         }
 
-        public async Task<bool> DeleteFolderAsync(int folderId)
+        public async Task<Result<string>> DeleteFolderAsync(int folderId, int userId, bool deleteContents)
         {
-            var folder = await _folderRepository.GetByIdAsync(folderId);
-            if (folder == null)
+            var folder = await _folderRepository.GetByIdWithFilesRecursivelyAsync(folderId);
+            if (folder == null || folder.UserId != userId)
             {
-                return false;
+                return Result<string>.Failure("Folder not found or you don't have permission");
             }
 
-            var hasChildren = folder.SubFolders != null && folder.SubFolders.Count != 0;
-            if (hasChildren)
-                return false;
+            var hasSubfolders = folder.SubFolders.Any() == true;
+            var hasFiles = folder.Files.Any() || folder.SubFolders.Any(sf => sf.Files.Any());
 
-            var deletedFolder = await _folderRepository.DeleteAsync(folderId);
-            return deletedFolder != null;
+            if ((hasSubfolders || hasFiles) && !deleteContents)
+            {
+                return Result<string>.Failure("Folder is not empty. Confirm deletion with contents");
+            }
+
+            // Delete subfolders and files recursively
+            await DeleteFolderAndContentsRecursively(folder);
+
+            return Result<string>.Success("Folder and its contents deleted succesfully!");
         }
 
         public async Task<Folder?> GetFolderByIdAsync(int folderId)
@@ -179,6 +187,26 @@ namespace MiniDropBox.Application.Implementations
             var updatedFolder = await _folderRepository.UpdateAsync(existing);
 
             return Result<string>.Success($"Uploaded folder, new path: {updatedFolder!.Path} .");
+        }
+
+        // Auxiliary method to delete folder and content recursively
+        private async Task DeleteFolderAndContentsRecursively(Folder folder)
+        {
+            // First delete all files
+            foreach(var file in folder.Files)
+            {
+                await _fileStorageService.DeleteStreamAsync(file.Path);
+                await _fileRepository.DeleteAsync(file.Id);
+            }
+
+            // Delete all subfolders
+            foreach(var subFolder in folder.SubFolders)
+            {
+                await DeleteFolderAndContentsRecursively(subFolder);
+            }
+
+            // Finally delete the folder itself
+            await _folderRepository.DeleteAsync(folder.Id);
         }
 
         // Auxiliary method to update folder path recursively

@@ -12,6 +12,6 @@ namespace MiniDropBox.Application.Interfaces
         Task<List<FolderTreeNodeDTO>> GetTreeForUserAsync(int userId);
         Task<Result<string>> MoveFolderAsync(MoveFolderDTO moveFolderDTO, int userId);
         Task<Result<string>> UpdateFolderAsync(UpdateFolderDTO updateFolderDTO);
-        Task<bool> DeleteFolderAsync(int folderId);
+        Task<Result<string>> DeleteFolderAsync(int folderId, int userId, bool deleteContents);
     }
 }

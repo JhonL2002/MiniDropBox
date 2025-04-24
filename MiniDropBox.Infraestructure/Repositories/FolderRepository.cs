@@ -39,6 +39,21 @@ namespace MiniDropBox.Infraestructure.Repositories
             return folder;
         }
 
+        public async Task<Folder?> GetByIdWithFilesRecursivelyAsync(int folderId)
+        {
+            var root = await _context.Folders
+                .Include(f => f.Files)
+                .Include(f => f.SubFolders)
+                .FirstOrDefaultAsync(f => f.Id == folderId);
+
+            if (root != null)
+            {
+                await LoadSubfoldersAndFilesRecursively(root);
+            }
+
+            return root;
+        }
+
         public async Task<Folder?> GetByIdWithSubfoldersRecursivelyAsync(int folderId)
         {
             var root = await _context.Folders
@@ -87,6 +102,23 @@ namespace MiniDropBox.Infraestructure.Repositories
             foreach (var sub in folder.SubFolders)
             {
                 await LoadSubfoldersRecursively(sub);
+            }
+        }
+
+        // Load files recursively
+        private async Task LoadSubfoldersAndFilesRecursively(Folder folder)
+        {
+            await _context.Entry(folder)
+                .Collection(f => f.SubFolders)
+                .LoadAsync();
+
+            await _context.Entry(folder)
+                .Collection(f => f.Files)
+                .LoadAsync();
+
+            foreach(var sub in folder.SubFolders)
+            {
+                await LoadSubfoldersAndFilesRecursively(sub);
             }
         }
 

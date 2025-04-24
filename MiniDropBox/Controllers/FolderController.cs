@@ -82,14 +82,17 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpDelete("{folderId}")]
-        public async Task<IActionResult> DeleteFolder(int folderId)
+        public async Task<IActionResult> DeleteFolder(int folderId, bool deleteContents = false)
         {
-            var result = await _folderService.DeleteFolderAsync(folderId);
-            if (!result)
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+                return Unauthorized();
+
+            var result = await _folderService.DeleteFolderAsync(folderId, userId, deleteContents);
+            if (!result.IsSuccess)
             {
-                return NotFound();
+                return BadRequest(result.Error);
             }
-            return NoContent();
+            return Ok(result.Value);
         }
     }
 }
