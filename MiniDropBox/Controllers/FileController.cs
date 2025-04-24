@@ -57,13 +57,27 @@ namespace MiniDropBox.API.Controllers
                 : BadRequest(result.Error);
         }
 
+        [HttpDelete("delete/{fileId}")]
+        public async Task<IActionResult> DeleteFile(int fileId)
+        {
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+                return Unauthorized();
+
+            var result = await _fileService.DeleteFileAsync(fileId, userId);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error);
+
+            return Ok(result.Value);
+        }
+
         [HttpGet("download/{fileId}")]
         public async Task<IActionResult> DownloadFile(int fileId)
         {
             if (!int.TryParse(_currentUser.UserId, out var userId))
                 return Unauthorized();
 
-            var result = await _fileService.DownloadStreamAsync(fileId, userId);
+            var result = await _fileService.DownloadFileAsync(fileId, userId);
 
             if (!result.IsSuccess)
                 return BadRequest(result.Error);

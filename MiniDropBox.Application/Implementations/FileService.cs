@@ -23,7 +23,33 @@ namespace MiniDropBox.Application.Implementations
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<(Stream stream, string fileName)>> DownloadStreamAsync(int fileId, int userId)
+        public async Task<Result<string>> DeleteFileAsync(int fileId, int userId)
+        {
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var file = await _fileRepository.GetByIdAsync(fileId);
+                if (file == null || file.UserId != userId)
+                    return Result<string>.Failure("File not found or you don't have permission");
+
+                var isDeleted = await _fileStorageService.DeleteStreamAsync(file.Path);
+                if (!isDeleted)
+                    return Result<string>.Failure("Blob not found");
+
+                await _fileRepository.DeleteAsync(fileId);
+
+                await _unitOfWork.CommitAsync();
+                return Result<string>.Success($"File {file.Name} deleted successfully");
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Result<(Stream stream, string fileName)>> DownloadFileAsync(int fileId, int userId)
         {
             var file = await _fileRepository.GetByIdAsync(fileId);
             if (file == null || file.UserId != userId)
