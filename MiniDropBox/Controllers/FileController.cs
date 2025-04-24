@@ -11,6 +11,7 @@ namespace MiniDropBox.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FileController : ControllerBase
     {
         private readonly IFileService _fileService;
@@ -23,7 +24,6 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpPost("upload")]
-        [Authorize]
         public async Task<IActionResult> UploadFile([FromForm] UploadFileFormDTO formData)
         {
             if (!int.TryParse(_currentUser.UserId, out var userId))
@@ -45,7 +45,6 @@ namespace MiniDropBox.API.Controllers
         }
 
         [HttpPut("move")]
-        [Authorize]
         public async Task<IActionResult> MoveFile([FromBody] MoveFileDTO moveFileDTO)
         {
             if (!int.TryParse(_currentUser.UserId, out var userId))
@@ -56,6 +55,21 @@ namespace MiniDropBox.API.Controllers
             return result.IsSuccess
                 ? Ok(result.Value)
                 : BadRequest(result.Error);
+        }
+
+        [HttpGet("download/{fileId}")]
+        public async Task<IActionResult> DownloadFile(int fileId)
+        {
+            if (!int.TryParse(_currentUser.UserId, out var userId))
+                return Unauthorized();
+
+            var result = await _fileService.DownloadStreamAsync(fileId, userId);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error);
+
+            var (stream, fileName) = result.Value;
+            return File(stream, "application/octet-stream", fileName);
         }
     }
 }

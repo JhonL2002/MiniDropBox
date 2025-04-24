@@ -23,6 +23,19 @@ namespace MiniDropBox.Application.Implementations
             _unitOfWork = unitOfWork;
         }
 
+        public async Task<Result<(Stream stream, string fileName)>> DownloadStreamAsync(int fileId, int userId)
+        {
+            var file = await _fileRepository.GetByIdAsync(fileId);
+            if (file == null || file.UserId != userId)
+                return Result<(Stream stream, string fileName)>.Failure("File not found or you don't have permission");
+
+            var stream = await _fileStorageService.DownloadStreamAsync(file.Path);
+            if (stream == null)
+                return Result<(Stream, string)>.Failure("Blob not found");
+
+            return Result<(Stream, string)>.Success((stream, file.Name));
+        }
+
         public async Task<Result<string>> MoveFileAsync(MoveFileDTO moveFileDTO, int userId)
         {
             await _unitOfWork.BeginTransactionAsync();
@@ -31,7 +44,7 @@ namespace MiniDropBox.Application.Implementations
             {
                 var file = await _fileRepository.GetByIdAsync(moveFileDTO.Id);
                 if (file == null || file.UserId != userId)
-                    return Result<string>.Failure("Folder not found or you don't have permission");
+                    return Result<string>.Failure("File not found or you don't have permission");
 
                 var targetFolder = await _folderRepository.GetByIdAsync(moveFileDTO.FolderId);
 
